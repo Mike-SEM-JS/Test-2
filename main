@@ -1,0 +1,47 @@
+
+function main() {
+  var spreadsheetUrl = 'https://docs.google.com/spreadsheets/d/1PbeCThRFU8paCOjr8Fb1RX_RcdRNDMoOIK_6qG8DXwM/edit?usp=sharing';
+  var spreadsheet = SpreadsheetApp.openByUrl(spreadsheetUrl);
+  
+  var adGroupSheet = spreadsheet.getSheets()[0];
+  var keywordSheet = spreadsheet.getSheets()[1];
+  
+  var adGroupData = adGroupSheet.getDataRange().getValues();
+  var keywordData = keywordSheet.getDataRange().getValues();
+  
+  createAdGroups(adGroupData);
+  addKeywordsToAdGroups(keywordData);
+}
+function createAdGroups(data) {
+  var campaign = AdWordsApp.campaigns().get().next();
+  
+  for (var i = 1; i < data.length; i++) {
+    campaign.newAdGroupBuilder()
+      .withName(data[i][0])
+      .withStatus('PAUSED')
+      .build();
+  }
+}
+function addKeywordsToAdGroups(data) {
+  for (var i = 1; i < data.length; i++) {
+    var adGroupIterator = AdWordsApp.adGroups()
+      .withCondition('Name = "' + data[i][0] + '"')
+      .get();
+      
+    if (adGroupIterator.hasNext()) {
+      var adGroup = adGroupIterator.next();
+      
+      adGroup.newKeywordBuilder()
+        .withText('[' + data[i][1] + ']') // exact match
+        .build();
+        
+      adGroup.newKeywordBuilder()
+        .withText('"' + data[i][1] + '"') // phrase match
+        .build();
+        
+      adGroup.newKeywordBuilder()
+        .withText(data[i][1]) // broad match
+        .build();
+    }
+  }
+}
